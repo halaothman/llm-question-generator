@@ -1,9 +1,9 @@
-"""اختيار أسئلة MCQ: توزيع الميزانية، إزالة التكرار، وحد أقصى مع حصص نوعية."""
+"""MCQ selection: budget distribution, deduplication, and capped type quotas."""
 from __future__ import annotations
 
 import re
 
-# أنواع MCQ حسب حقل type من JSON النموذج
+# MCQ types from the model JSON ``type`` field
 _COMPUTATION_TYPES = frozenset(
     {"computation", "computational", "حساب", "حسابي", "calculation", "numeric"}
 )
@@ -14,7 +14,7 @@ _ANALYSIS_APPLICATION_TYPES = frozenset(
 
 
 def distribute_question_counts(num_questions: int, segment_count: int) -> list[int]:
-    """توزيع ميزانية الأسئلة على مقاطع المستند (باقي → المقاطع الأولى)."""
+    """Distribute question budget across document segments (remainder → first segments)."""
     if segment_count <= 0:
         return []
     if num_questions <= 0:
@@ -27,7 +27,7 @@ def distribute_question_counts(num_questions: int, segment_count: int) -> list[i
 
 
 def question_key(item: dict) -> str:
-    """مفتاح إزالة تكرار MCQ (نص السؤال + الخيارات)."""
+    """Dedup key for MCQ items (question text + options)."""
     question = re.sub(r"\s+", " ", str(item.get("q", "")).strip().lower())
     options = "|".join(
         re.sub(r"\s+", " ", str(option).strip().lower())
@@ -37,7 +37,7 @@ def question_key(item: dict) -> str:
 
 
 def dedupe_mcq(items: list[dict]) -> list[dict]:
-    """إزالة أسئلة MCQ مكررة."""
+    """Remove duplicate MCQ items."""
     deduped: list[dict] = []
     seen: set[str] = set()
     for item in items:
@@ -50,18 +50,18 @@ def dedupe_mcq(items: list[dict]) -> list[dict]:
 
 
 def _question_type(item: dict) -> str:
-    """نوع السؤال من حقل type أو question_kind."""
+    """Question type from ``type`` or ``question_kind`` field."""
     raw = str(item.get("question_kind") or item.get("type") or "").strip().lower()
     return raw.replace("-", "_").replace(" ", "_")
 
 
 def _is_computation(item: dict) -> bool:
-    """هل السؤال من نوع حساب (computation) حسب حقل type؟"""
+    """Whether the item is a computation-type question."""
     return _question_type(item) in _COMPUTATION_TYPES
 
 
 def _is_analysis_or_application(item: dict) -> bool:
-    """هل السؤال من نوع تحليل أو تطبيق حسب حقل type؟"""
+    """Whether the item is analysis or application type."""
     return _question_type(item) in _ANALYSIS_APPLICATION_TYPES
 
 
@@ -72,13 +72,13 @@ def cap_and_diversify_mcq(
     min_computation: int,
     min_analysis_application: int,
 ) -> list[dict]:
-    """اختيار MCQ نهائي: حصة تحليل/تطبيق، ثم حساب، ثم الباقي — مع dedupe.
+    """Select final MCQs: analysis/application quota, then computation, then fill — with dedupe.
 
     Args:
-        items: قائمة الأسئلة بعد التحقق.
-        max_total: العدد الأقصى المطلوب (مثلاً 20).
-        min_computation: حد أدنى لأسئلة الحساب.
-        min_analysis_application: حد أدنى لأسئلة التحليل/التطبيق.
+        items: Validated question list.
+        max_total: Maximum desired count (e.g. 20).
+        min_computation: Minimum computation questions.
+        min_analysis_application: Minimum analysis/application questions.
     """
     if max_total <= 0 or not items:
         return []
@@ -87,7 +87,7 @@ def cap_and_diversify_mcq(
     seen: set[str] = set()
 
     def try_add(item: dict) -> bool:
-        """إضافة سؤال إن لم يُتجاوز الحد الأقصى ولم يُكرّر مفتاحه."""
+        """Add item if under cap and not already seen."""
         if len(selected) >= max_total:
             return False
         key = question_key(item)
@@ -97,18 +97,21 @@ def cap_and_diversify_mcq(
         selected.append(item)
         return True
 
+    # Pass 1: meet analysis/application minimum
     for item in items:
         if sum(1 for x in selected if _is_analysis_or_application(x)) >= min_analysis_application:
             break
         if _is_analysis_or_application(item):
             try_add(item)
 
+    # Pass 2: meet computation minimum
     for item in items:
         if sum(1 for x in selected if _is_computation(x)) >= min_computation:
             break
         if _is_computation(item):
             try_add(item)
 
+    # Pass 3: fill remaining slots in original order
     for item in items:
         try_add(item)
 

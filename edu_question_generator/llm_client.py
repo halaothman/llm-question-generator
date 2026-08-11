@@ -1,4 +1,4 @@
-"""عميل DeepSeek API (OpenAI-compatible): محادثة chat/completions."""
+"""DeepSeek API client (OpenAI-compatible): chat/completions wrapper."""
 from __future__ import annotations
 
 import os
@@ -17,10 +17,10 @@ from .config import (
 
 
 def create_llm_client(api_key: str | None = None) -> OpenAI:
-    """إنشاء عميل OpenAI-compatible متجه إلى DeepSeek API.
+    """Create an OpenAI-compatible client pointed at the DeepSeek API.
 
     Args:
-        api_key: مفتاح API؛ إن تُرك فارغاً يُقرأ من DEEPSEEK_API_KEY.
+        api_key: API key; if omitted, reads from DEEPSEEK_API_KEY.
     """
     return OpenAI(
         base_url=DEEPSEEK_BASE_URL,
@@ -35,16 +35,16 @@ def chat_complete(
     api_key: str | None = None,
     max_tokens: int | None = None,
 ) -> str:
-    """استدعاء DeepSeek chat/completions وإرجاع نص الرد.
+    """Call DeepSeek chat/completions and return the response text.
 
     Args:
-        model: معرّف النموذج (deepseek-chat، deepseek-reasoner، …).
-        messages: قائمة رسائل المحادثة (system + user).
-        api_key: مفتاح API اختياري.
-        max_tokens: حد أقصى للرموز المُولَّدة.
+        model: Model identifier (deepseek-chat, deepseek-reasoner, …).
+        messages: Conversation messages (system + user).
+        api_key: Optional API key.
+        max_tokens: Maximum tokens to generate.
 
     Raises:
-        RuntimeError: عند خطأ نموذج، حد معدّل، رصيد، أو طلب كبير جداً.
+        RuntimeError: On invalid model, rate limit, insufficient balance, or oversized request.
     """
     request_kwargs: dict = {
         "model": model or DEEPSEEK_MODEL,

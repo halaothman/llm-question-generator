@@ -1,4 +1,4 @@
-"""توليد أسئلة MCQ عبر DeepSeek: prompts، تنظيف، واستدعاء النموذج."""
+"""Generate MCQ questions via DeepSeek: prompts, sanitization, and model calls."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,7 @@ from .response_parser import parse_llm_mcq_response
 
 Lang = Literal["ar", "en"]
 
-# رموز غير مسموحة في نص السؤال (CJK، Cyrillic، …)
+# Characters forbidden in question text (CJK, Cyrillic, etc.)
 FORBIDDEN_CHARS = re.compile(
     "["
     "\u4e00-\u9fff"  # CJK Unified Ideographs
@@ -32,7 +32,7 @@ FORBIDDEN_CHARS = re.compile(
 
 
 def detect_lang(text: str) -> Lang:
-    """كشف لغة المستند (ar/en) عبر langdetect؛ الافتراضي en عند الفشل."""
+    """Detect document language (ar/en) via langdetect; defaults to en on failure."""
     try:
         return "ar" if detect(text) == "ar" else "en"
     except Exception:
@@ -40,7 +40,7 @@ def detect_lang(text: str) -> Lang:
 
 
 def sanitize_text(text: str) -> str:
-    """إزالة رموز CJK/Cyrillic/Devanagari وغيرها من نص السؤال أو الحل."""
+    """Strip CJK/Cyrillic/Devanagari and similar characters from question or solution text."""
     if not text:
         return text
     cleaned = FORBIDDEN_CHARS.sub("", str(text))
@@ -49,7 +49,7 @@ def sanitize_text(text: str) -> str:
 
 
 def sanitize_payload(payload: dict) -> dict:
-    """تنظيف حقول كل عنصر MCQ (q, options, answer, solution, question_kind)."""
+    """Sanitize every MCQ field (q, options, answer, solution, question_kind)."""
     for item in payload.get("mcq", []):
         item["q"] = sanitize_text(item.get("q", ""))
         item["solution"] = sanitize_text(item.get("solution") or item.get("explanation", ""))
@@ -69,20 +69,20 @@ def generate_questions(
     model: str = "",
     api_key: str | None = None,
 ) -> dict:
-    """توليد MCQ من مقطع واحد عبر DeepSeek مع تنظيف وتحليل JSON.
+    """Generate MCQs from a single segment via DeepSeek with sanitization and JSON parsing.
 
     Args:
-        context: نص المقطع المراد توليد أسئلة منه.
-        lang: لغة المستند (ar/en) لاختيار رسالة system.
-        num_questions: العدد المطلوب؛ None = حتى 3 أسئلة.
-        model: معرّف النموذج؛ فارغ = DEEPSEEK_MODEL.
-        api_key: مفتاح DeepSeek.
+        context: Segment text to generate questions from.
+        lang: Document language (ar/en) for system message selection.
+        num_questions: Desired count; None = up to 3 questions.
+        model: Model identifier; empty = DEEPSEEK_MODEL.
+        api_key: DeepSeek API key.
 
     Returns:
-        dict بمفتاح ``mcq`` يحتوي قائمة أسئلة منظّفة.
+        dict with ``mcq`` key containing sanitized question list.
 
     Raises:
-        json.JSONDecodeError: إذا فشل تحليل JSON بعد محاولتين.
+        json.JSONDecodeError: If JSON parsing fails after two attempts.
     """
     prompt = build_deepseek_prompt(context, num_questions)
     system = build_deepseek_system_message(lang)
@@ -92,6 +92,7 @@ def generate_questions(
     ]
     resolved_model = model or DEEPSEEK_MODEL
     last_error: json.JSONDecodeError | None = None
+    # Retry once on JSON parse failure (model may fix format on second attempt)
     for attempt in range(2):
         try:
             content = chat_complete(resolved_model, messages, api_key=api_key)

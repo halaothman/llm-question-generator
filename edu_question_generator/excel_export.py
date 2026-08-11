@@ -1,11 +1,11 @@
-"""تصدير أسئلة MCQ إلى DataFrame و Excel."""
+"""Export MCQ questions to DataFrame and Excel."""
 from __future__ import annotations
 
 import io
 
 import pandas as pd
 
-# أعمدة جدول Excel/العرض
+# Columns for Excel export and UI display
 _COLUMNS = [
     "#",
     "Type",
@@ -21,7 +21,7 @@ _COLUMNS = [
 
 
 def questions_to_dataframe(payload: dict) -> pd.DataFrame:
-    """تحويل ``payload['mcq']`` إلى DataFrame بأعمدة العرض والتصدير."""
+    """Convert ``payload['mcq']`` to a DataFrame with display/export columns."""
     rows: list[dict] = []
 
     for index, item in enumerate(payload.get("mcq", []), start=1):
@@ -47,7 +47,7 @@ def questions_to_dataframe(payload: dict) -> pd.DataFrame:
 
 
 def dataframe_to_excel(df: pd.DataFrame) -> bytes:
-    """تصدير DataFrame إلى ملف xlsx في الذاكرة (ورقة Questions)."""
+    """Export DataFrame to an in-memory xlsx file (Questions sheet)."""
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Questions")

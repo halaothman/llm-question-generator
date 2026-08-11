@@ -1,13 +1,14 @@
-"""Prompt DeepSeek: امتحان جامعي MCQ صعب من جزء المستند."""
+"""DeepSeek prompts: hard university-level MCQs from a document segment."""
 from __future__ import annotations
 
+# Arabic language rules sent to the model (output must stay in Arabic)
 LANGUAGE_RULES_AR = """
 - استخدم العربية الفصحى مع مصطلحات تقنية إنجليزية شائعة فقط (مثل CNN, Attention, FLOPs)
 - ممنوع تماماً: الأحرف الصينية أو اليابانية أو الكورية أو أي رموز غريبة
 - مسموح فقط: العربية، الإنجليزية، الأرقام، وعلامات رياضية شائعة (+ - × ÷ = ^ / ( ) [ ] %)
 """
 
-# قواعد مستوى التفكير المعرفي (تحليل + حساب multi-step، منع الحفظ الميكانيكي)
+# Cognitive level rules: analysis + multi-step computation, no mechanical recall
 _COGNITIVE_LEVEL_BLOCK = """
 ========================
 دورك ومستوى التفكير
@@ -36,7 +37,7 @@ _COGNITIVE_LEVEL_BLOCK = """
 لا تكتب سلسلة تفكير — **JSON فقط**.
 """
 
-# تجريد أسماء الدوال/المتغيرات من الكود في صياغة الأسئلة
+# Abstract code identifiers when phrasing questions (avoid raw variable/function names)
 _CODE_ABSTRACTION_BLOCK = """
 ========================
 تجريد الكود (السؤال والخيارات والحل)
@@ -60,7 +61,7 @@ _CODE_ABSTRACTION_BLOCK = """
 
 
 def _deepseek_output_format_section(context: str) -> str:
-    """قسم صيغة JSON العربية مع حقل type."""
+    """JSON output format section (Arabic) with ``type`` field."""
     return f"""حلّل المحتوى داخلياً دون طباعة التحليل، ثم أخرج الأسئلة **فقط** بصيغة JSON دون أي نص خارج JSON.
 
 {{
@@ -89,11 +90,11 @@ def build_deepseek_prompt(
     context: str,
     num_questions: int | None = None,
 ) -> str:
-    """تجميع prompt المستخدم لتوليد MCQ صعبة من مقطع واحد.
+    """Assemble the user prompt for generating hard MCQs from one segment.
 
     Args:
-        context: نص المقطع المرفوع.
-        num_questions: العدد المطلوب؛ None = حتى 3 أسئلة.
+        context: Uploaded segment text.
+        num_questions: Exact count required; None = up to 3 questions.
     """
     count_line = (
         f"أخرج **بالضبط {num_questions}** سؤال MCQ من هذا الجزء فقط — لا أكثر ولا أقل."
@@ -158,6 +159,7 @@ MCQ: أربعة خيارات، مشتتات منطقية، `solution` قصير �
 {_deepseek_output_format_section(context)}"""
 
 
+# System messages by document language
 SYSTEM_MESSAGES = {
     "en": (
         "University final exam MCQs in Arabic: mix analysis/application (why, what-if) "
@@ -167,11 +169,11 @@ SYSTEM_MESSAGES = {
     "ar": (
         "أنت عضو هيئة تدريس تعد امتحاناً نهائياً. "
         "مزيج: تحليل/تطبيق (لماذا، ماذا لو) + حساب multi-step (فهم ثم حساب) — "
-        "لا طرح ميكانيكي ولا solution متردد. JSON فقط."
+        "لا طرح ميكانيكي ولا solution متردد. JSON only."
     ),
 }
 
 
 def build_deepseek_system_message(lang: str) -> str:
-    """رسالة system حسب لغة المستند (ar → عربي، غير ذلك → إنجليزي)."""
+    """Return system message for document language (ar → Arabic, else English)."""
     return SYSTEM_MESSAGES["ar" if lang == "ar" else "en"]

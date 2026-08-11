@@ -1,4 +1,4 @@
-"""واجهة Streamlit: رفع ملف → pipeline → عرض MCQ → تحميل Excel."""
+"""Streamlit UI: upload file → pipeline → display MCQs → download Excel."""
 from __future__ import annotations
 
 import html
@@ -21,7 +21,7 @@ from edu_question_generator.generator import detect_lang
 from edu_question_generator.loaders import load_text
 from edu_question_generator.pipeline import generate_from_document
 
-# CSS مخصّص لتبويب Edu في app.py
+# Custom CSS for the Edu tab in app.py
 _EDU_STYLES = """
 <style>
 .edu-qg .main-title { font-size: 2.15rem; font-weight: 800; margin-bottom: 0.25rem; text-align: center; }
@@ -51,7 +51,7 @@ _EDU_STYLES = """
 </style>
 """
 
-# مراحل pipeline المعروضة للمستخدم
+# Pipeline phases shown to the user during generation
 _PIPELINE_PHASES: list[tuple[str, str]] = [
     ("extract", "استخراج النص من الملف"),
     ("chunk", "تقسيم المستند"),
@@ -64,7 +64,7 @@ _PIPELINE_PHASES: list[tuple[str, str]] = [
 
 
 def _read_secret(name: str) -> str | None:
-    """قراءة سر من st.secrets ثم متغير البيئة."""
+    """Read a secret from st.secrets, then fall back to environment variable."""
     try:
         value = st.secrets[name]
         if value is None:
@@ -81,17 +81,17 @@ def _read_secret(name: str) -> str | None:
 
 
 def get_deepseek_api_key() -> str | None:
-    """مفتاح DeepSeek للتوليد."""
+    """Return DeepSeek API key for generation."""
     return _read_secret("DEEPSEEK_API_KEY")
 
 
 def get_deepseek_model() -> str:
-    """معرّف النموذج من secrets.toml ثم env ثم config."""
+    """Return model id from secrets.toml, then env, then config default."""
     return _read_secret("DEEPSEEK_MODEL") or DEFAULT_DEEPSEEK_MODEL
 
 
 def _init_edu_state() -> None:
-    """تهيئة session_state لتبويب Edu."""
+    """Initialize session_state keys for the Edu tab."""
     defaults = {
         "edu_questions_df": None,
         "edu_last_filename": None,
@@ -102,7 +102,7 @@ def _init_edu_state() -> None:
 
 
 def _stage_phase_key(stage: str) -> str:
-    """ربط stage داخلي بمرحلة العرض (extract/chunk/generate/…)."""
+    """Map internal pipeline stage to display phase (extract/chunk/generate/…)."""
     if stage == "extract_done":
         return "extract"
     if stage == "chunking":
@@ -121,7 +121,7 @@ def _stage_phase_key(stage: str) -> str:
 
 
 def pipeline_status_headline(stage: str, data: dict) -> str:
-    """عنوان شريط الحالة أثناء التوليد."""
+    """Status bar headline shown during generation."""
     del data
     labels = dict(_PIPELINE_PHASES)
     phase = _stage_phase_key(stage)
@@ -132,7 +132,7 @@ def pipeline_status_headline(stage: str, data: dict) -> str:
 
 
 def _render_phase_checklist(completed: set[str], current: str) -> str:
-    """HTML لقائمة مراحل pipeline (✓ / ▸ / ○)."""
+    """HTML checklist for pipeline phases (✓ / ▸ / ○)."""
     rows: list[str] = []
     for key, label in _PIPELINE_PHASES:
         if key in completed:
@@ -149,10 +149,10 @@ def _render_phase_checklist(completed: set[str], current: str) -> str:
 
 
 def make_pipeline_progress_ui():
-    """إنشاء callback تقدّم pipeline وشريط progress لـ st.status.
+    """Create pipeline progress callback and progress bar for st.status.
 
     Returns:
-        tuple: (callback, progress_bar) — يُمرَّر callback إلى generate_from_document.
+        tuple: (callback, progress_bar) — pass callback to generate_from_document.
     """
     completed_phases: set[str] = set()
     current_phase = "extract"
@@ -163,7 +163,7 @@ def make_pipeline_progress_ui():
     log_box.markdown(_render_phase_checklist(completed_phases, current_phase), unsafe_allow_html=True)
 
     def callback(stage: str, data: dict) -> None:
-        """تحديث قائمة المراحل (✓/▸/○) وشريط التقدم عند كل حدث pipeline."""
+        """Update phase checklist (✓/▸/○) and progress bar on each pipeline event."""
         nonlocal current_phase
         phase = _stage_phase_key(stage)
         if phase in order:
@@ -200,7 +200,7 @@ def make_pipeline_progress_ui():
 
 
 def _render_api_key_status() -> None:
-    """تحذير عند غياب DEEPSEEK_API_KEY."""
+    """Show warning when DEEPSEEK_API_KEY is missing."""
     if get_deepseek_api_key():
         return
     st.markdown(
@@ -212,7 +212,7 @@ def _render_api_key_status() -> None:
 
 
 def _rtl_markdown(content: str) -> None:
-    """Markdown بمحاذاة RTL."""
+    """Render markdown inside an RTL-aligned container."""
     st.markdown(
         f'<div class="rtl-block">{content}</div>',
         unsafe_allow_html=True,
@@ -220,7 +220,7 @@ def _rtl_markdown(content: str) -> None:
 
 
 def _render_questions(df) -> None:
-    """عرض أسئلة MCQ في بطاقات."""
+    """Display MCQ questions as bordered cards."""
     for _, row in df.iterrows():
         with st.container(border=True):
             kind = row.get("Question Kind", "")
@@ -248,7 +248,7 @@ def _render_questions(df) -> None:
 
 
 def render_edu_app() -> None:
-    """عرض واجهة Edu Question Generator داخل التطبيق الرئيسي."""
+    """Render the Edu Question Generator UI inside the main app."""
     _init_edu_state()
     st.markdown(_EDU_STYLES, unsafe_allow_html=True)
     st.markdown('<div class="edu-qg">', unsafe_allow_html=True)
@@ -291,7 +291,7 @@ def render_edu_app() -> None:
                 tmp_path = tmp.name
 
             def on_pipeline_progress(stage: str, data: dict) -> None:
-                """ربط callback التقدّم بتحديث عنوان st.status."""
+                """Wire progress callback to st.status label updates."""
                 progress_cb(stage, data)
                 run_status.update(label=pipeline_status_headline(stage, data))
 

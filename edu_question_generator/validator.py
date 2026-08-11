@@ -1,4 +1,4 @@
-"""التحقق من أسئلة MCQ: بنية MCQ محلياً + جودة/إسناد عبر LLM."""
+"""MCQ validation: local structural checks + LLM quality/source grounding."""
 from __future__ import annotations
 
 import json
@@ -14,12 +14,12 @@ MIN_QUESTION_CHARS = 10
 
 
 def _normalize(text: str) -> str:
-    """تطبيع للمقارنة (مسافات + lowercase)."""
+    """Normalize text for comparison (whitespace + lowercase)."""
     return re.sub(r"\s+", " ", str(text or "").strip()).lower()
 
 
 def _passes_structural_checks(item: dict, source: str = "") -> bool:
-    """فحص شكل MCQ محلياً: 4 خيارات فريدة، إجابة ضمن الخيارات، ورفض recall رقمي."""
+    """Local MCQ shape check: 4 unique options, answer in options, reject numeric recall."""
     question = str(item.get("q", "")).strip()
     options = [str(option).strip() for option in item.get("options", []) if str(option).strip()]
     answer = str(item.get("answer", "")).strip()
@@ -46,7 +46,7 @@ def _passes_structural_checks(item: dict, source: str = "") -> bool:
 
 
 def _build_validation_prompt(source: str, questions: list[dict]) -> str:
-    """prompt التحقق LLM: قائمة ids للإبقاء/الرفض."""
+    """Build LLM validation prompt: list of ids to keep/reject."""
     compact_questions = [
         {
             "id": index + 1,
@@ -59,6 +59,7 @@ def _build_validation_prompt(source: str, questions: list[dict]) -> str:
         for index, item in enumerate(questions)
     ]
 
+    # Arabic prompt text is intentional — sent to the LLM for validation
     return f"""أنت أستاذ جامعي صارم تتحقق من أسئلة MCQ عربية صعبة.
 
 المستند المصدر (الدليل الوحيد المسموح):
@@ -111,7 +112,7 @@ def _llm_filter_ids(
     api_key: str | None,
     model: str,
 ) -> set[int]:
-    """استدعاء LLM وإرجاع مجموعة ids المقبولة."""
+    """Call LLM and return the set of accepted question ids."""
     if not questions:
         return set()
 
@@ -142,16 +143,16 @@ def filter_mcq_payload(
     api_key: str | None,
     model: str = "",
 ) -> dict:
-    """فلترة MCQ: فحص بنية محلي ثم قبول/رفض عبر LLM مقابل المصدر.
+    """Filter MCQs: local structure check then LLM accept/reject against source.
 
     Args:
-        payload: dict يحتوي ``mcq``.
-        source: نص المستند الأصلي للتحقق من الإسناد.
-        api_key: مفتاح DeepSeek للتحقق.
-        model: معرّف النموذج.
+        payload: dict containing ``mcq``.
+        source: Original document text for grounding checks.
+        api_key: DeepSeek key for validation.
+        model: Model identifier.
 
     Returns:
-        payload مُحدَّث بقائمة mcq المقبولة فقط.
+        Updated payload with only accepted mcq items.
     """
     mcq_items = payload.get("mcq", [])
     if not mcq_items:
@@ -165,6 +166,7 @@ def filter_mcq_payload(
     try:
         keep_ids = _llm_filter_ids(source, structurally_valid, api_key, model)
     except Exception:
+        # On LLM failure, keep structurally valid items rather than dropping all
         payload["mcq"] = structurally_valid
         return payload
 

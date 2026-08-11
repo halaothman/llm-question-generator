@@ -1,11 +1,11 @@
-"""تقسيم المستند إلى قطع حرفية أو مقاطع منطقية (عناوين فصول/موضوعات)."""
+"""Split documents into character chunks or logical segments (chapter/topic headings)."""
 from __future__ import annotations
 
 import re
 
 from .config import CHUNK_OVERLAP, CHUNK_SIZE, LOGICAL_SEGMENT_MAX_CHARS, MAX_LOGICAL_SEGMENTS
 
-# أسطر تشبه عناوين فصول/محاضرات (عربي + إنجليزي)
+# Lines that look like chapter/lecture headings (Arabic + English)
 _HEADING_LINE = re.compile(
     r"^(?:"
     r"(?:Chapter|CHAPTER|Section|SECTION|Part|PART|Appendix|APPENDIX|Unit|UNIT|Lesson|LESSON)"
@@ -19,7 +19,7 @@ _HEADING_LINE = re.compile(
 
 
 def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
-    """تقسيم حرفي بنافذة متحركة (size حرف، overlap تداخل)."""
+    """Sliding-window character split (size chars with overlap)."""
     chunks: list[str] = []
     step = max(size - overlap, 1)
     for i in range(0, len(text), step):
@@ -36,7 +36,7 @@ def build_segments(
     overlap: int = CHUNK_OVERLAP,
     max_segment_chars: int = LOGICAL_SEGMENT_MAX_CHARS,
 ) -> list[str]:
-    """دمج قطع صغيرة في مقاطع لا تتجاوز max_segment_chars (fallback داخلي)."""
+    """Merge small chunks into segments that do not exceed max_segment_chars (internal fallback)."""
     chunks = chunk_text(text, size=size, overlap=overlap)
     if not chunks:
         return []
@@ -62,7 +62,7 @@ def build_segments(
 
 
 def _split_by_headings(text: str) -> list[str]:
-    """تقسيم عند أسطر العناوين إن وُجدت."""
+    """Split at heading lines when present."""
     lines = text.splitlines()
     if not lines:
         return []
@@ -87,7 +87,7 @@ def _split_by_headings(text: str) -> list[str]:
 
 
 def _split_into_equal_parts(text: str, parts: int) -> list[str]:
-    """تقسيم متساوٍ عند غياب العناوين الواضحة."""
+    """Equal split when no clear headings are found."""
     text = text.strip()
     if not text:
         return []
@@ -102,7 +102,7 @@ def _split_into_equal_parts(text: str, parts: int) -> list[str]:
         start = index * step
         end = length if index == parts - 1 else (index + 1) * step
         if index > 0:
-            # تفضيل القطع عند حد فقرة
+            # Prefer breaking at paragraph boundaries
             window = text[start : min(length, start + 400)]
             break_at = window.find("\n\n")
             if break_at > 40:
@@ -114,7 +114,7 @@ def _split_into_equal_parts(text: str, parts: int) -> list[str]:
 
 
 def _merge_smallest_adjacent(blocks: list[str]) -> list[str]:
-    """دمج أصغر زوج متجاور لتقليل عدد المقاطع."""
+    """Merge the smallest adjacent pair to reduce segment count."""
     if len(blocks) <= 1:
         return blocks
     best_index = 0
@@ -131,7 +131,7 @@ def _merge_smallest_adjacent(blocks: list[str]) -> list[str]:
 
 
 def _cap_block_size(block: str, max_chars: int) -> list[str]:
-    """تقسيم block طويل جداً باستخدام build_segments."""
+    """Split an oversized block using build_segments."""
     if len(block) <= max_chars:
         return [block]
     return build_segments(block, max_segment_chars=max_chars)
@@ -144,16 +144,16 @@ def build_logical_segments(
     max_segment_chars: int = LOGICAL_SEGMENT_MAX_CHARS,
     min_segment_chars: int = 800,
 ) -> list[str]:
-    """تقسيم منطقي: عناوين → وإلا أجزاء متساوية → حد أقصى للعدد والحجم.
+    """Logical split: headings first, else equal parts, then cap count and size.
 
     Args:
-        text: نص المستند الكامل.
-        max_segments: أقصى عدد مقاطع (افتراضي MAX_LOGICAL_SEGMENTS).
-        max_segment_chars: حد أقصى لحروف كل مقطع.
-        min_segment_chars: حد أدنى لدمج المقاطع القصيرة جداً.
+        text: Full document text.
+        max_segments: Maximum number of segments (default MAX_LOGICAL_SEGMENTS).
+        max_segment_chars: Maximum characters per segment.
+        min_segment_chars: Minimum size before merging tiny segments.
 
     Returns:
-        قائمة مقاطع جاهزة للتوليد.
+        List of segments ready for question generation.
     """
     cleaned = text.strip()
     if not cleaned:

@@ -1,5 +1,6 @@
-"""Edu Question Generator — توليد MCQ عبر DeepSeek API (منفصل عن مشروع الرسالة Ollama)."""
+"""Edu Question Generator — MCQ generation via DeepSeek API (separate from the thesis Ollama project)."""
 
 from .ui import render_edu_app
 
-__all__ = ["render_edu_app"]  # نقطة الدخول من app.py → app.py tab Edu
+# Public entry point consumed by app.py (Edu tab)
+__all__ = ["render_edu_app"]

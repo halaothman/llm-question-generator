@@ -65,14 +65,6 @@ footer {
     order: 2;
 }
 
-[data-testid="stSidebarNav"],
-[data-testid="stSidebarNav"] ul,
-[data-testid="stSidebarNav"] a,
-[data-testid="stSidebarNavLink"] {
-    direction: rtl;
-    text-align: right;
-}
-
 .stSidebar * {
     direction: rtl;
     text-align: right;

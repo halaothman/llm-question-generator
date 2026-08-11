@@ -1,10 +1,10 @@
-"""Pipeline كامل: مستند → مقاطع → توليد MCQ → دمج → تحقق → اختيار.
+"""Full pipeline: document → segments → MCQ generation → merge → validate → select.
 
-الاستراتيجية:
-1. استخراج النص
-2. تقسيم منطقي (عناوين) بحد MAX_LOGICAL_SEGMENTS
-3. توزيع ميزانية الأسئلة على المقاطع
-4. دمج، إزالة تكرار، تحقق، ثم cap إلى TARGET_QUESTIONS_TOTAL
+Strategy:
+1. Extract text
+2. Logical split (headings) capped at MAX_LOGICAL_SEGMENTS
+3. Distribute question budget across segments
+4. Merge, dedupe, validate, then cap to TARGET_QUESTIONS_TOTAL
 """
 
 from __future__ import annotations
@@ -35,11 +35,12 @@ from .question_selection import (
 )
 from .validator import filter_mcq_payload
 
-PipelineProgressCallback = Callable[[str, dict[str, Any]], None]  # (stage, بيانات تقدم)
+# Progress callback: (stage_name, progress_data)
+PipelineProgressCallback = Callable[[str, dict[str, Any]], None]
 
 
 def _resolve_model_id(model: str) -> str:
-    """معرّف النموذج (من ui/secrets أو config)."""
+    """Resolve model identifier (from ui/secrets or config default)."""
     return model or DEEPSEEK_MODEL
 
 
@@ -48,20 +49,20 @@ def _emit_progress(
     stage: str,
     **payload: Any,
 ) -> None:
-    """إبلاغ الواجهة بمرحلة pipeline."""
+    """Notify the UI of a pipeline stage."""
     if callback is not None:
         callback(stage, payload)
 
 
 def merge_payloads(payloads: list[dict]) -> dict:
-    """دمج قوائم mcq من كل مقطع ثم إزالة التكرار."""
+    """Merge mcq lists from all segments then deduplicate."""
     merged: list[dict] = []
     for payload in payloads:
         merged.extend(payload.get("mcq", []))
     return {"mcq": dedupe_mcq(merged)}
 
 
-# أخطاء تُوقف pipeline فوراً (لا تُتجاهل كـ segment_skip)
+# Errors that abort the pipeline immediately (not treated as segment_skip)
 _FATAL_LLM_ERRORS = frozenset({
     LLM_LIMIT_ERROR,
     LLM_INSUFFICIENT_BALANCE,
@@ -76,7 +77,7 @@ def _generate_segment_payload(
     model: str,
     api_key: str | None,
 ) -> dict | None:
-    """توليد MCQ من مقطع واحد؛ None عند فشل تحليل الرد أو طلب كبير."""
+    """Generate MCQs from one segment; None on parse failure or oversized request."""
     if num_questions == 0:
         return {"mcq": []}
     try:
@@ -109,23 +110,23 @@ def generate_from_document(
     target_questions: int | None = None,
     target_computation_min: int | None = None,
 ) -> tuple[dict, dict]:
-    """تشغيل pipeline كامل: تقسيم → توليد → دمج → تحقق → اختيار.
+    """Run the full pipeline: split → generate → merge → validate → select.
 
     Args:
-        text: نص المستند الكامل.
-        lang: لغة المستند (ar/en).
-        num_questions: ميزانية أسئلة (legacy؛ يُفضّل target_questions).
-        model: معرّف نموذج DeepSeek.
-        api_key: مفتاح API.
-        progress_callback: دالة (stage, data) لتحديث الواجهة.
-        target_questions: هدف العدد النهائي (افتراضي TARGET_QUESTIONS_TOTAL).
-        target_computation_min: حد أدنى لأسئلة الحساب.
+        text: Full document text.
+        lang: Document language (ar/en).
+        num_questions: Question budget (legacy; prefer target_questions).
+        model: DeepSeek model identifier.
+        api_key: API key.
+        progress_callback: (stage, data) function for UI updates.
+        target_questions: Final count target (default TARGET_QUESTIONS_TOTAL).
+        target_computation_min: Minimum computation questions.
 
     Returns:
-        (payload نهائي, metadata تشغيل).
+        (final payload, run metadata).
 
     Raises:
-        RuntimeError: PIPELINE_ALL_SEGMENTS_FAILED أو أخطاء LLM الحرجة.
+        RuntimeError: PIPELINE_ALL_SEGMENTS_FAILED or critical LLM errors.
     """
     question_budget = (
         target_questions

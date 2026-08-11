@@ -1,4 +1,4 @@
-"""تحليل رد DeepSeek (JSON في النص) وتوحيده إلى payload داخلي."""
+"""Parse DeepSeek responses (JSON embedded in text) into a normalized internal payload."""
 from __future__ import annotations
 
 import json
@@ -6,7 +6,7 @@ import re
 
 
 def _strip_model_artifacts(text: str) -> str:
-    """إزالة think/redacted_thinking من رد النموذج."""
+    """Remove think/redacted_thinking blocks from model output."""
     cleaned = str(text or "")
     think_open = "<" + "think" + ">"
     think_close = "</" + "think" + ">"
@@ -28,7 +28,7 @@ def _strip_model_artifacts(text: str) -> str:
 
 
 def _extract_json_object(text: str) -> str:
-    """استخراج {…} من markdown أو نص محيط."""
+    """Extract {…} from markdown fences or surrounding prose."""
     text = _strip_model_artifacts(text)
     text = text.strip()
     if text.startswith("```"):
@@ -42,17 +42,17 @@ def _extract_json_object(text: str) -> str:
 
 
 def _fix_invalid_json_escapes(text: str) -> str:
-    """إصلاح escape غير صالح في JSON."""
+    """Fix invalid escape sequences in JSON strings."""
     return re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", text)
 
 
 def _remove_trailing_commas(text: str) -> str:
-    """حذف فاصلة زائدة قبل } أو ]."""
+    """Remove trailing commas before } or ]."""
     return re.sub(r",(\s*[}\]])", r"\1", text)
 
 
 def safe_json(raw: str) -> dict:
-    """تحليل JSON من رد LLM مع إزالة artifacts ومحاولات إصلاح escape/فاصلة."""
+    """Parse JSON from LLM output with artifact stripping and escape/comma repair."""
     text = _extract_json_object(raw)
     candidates = [
         text,
@@ -78,7 +78,7 @@ def safe_json(raw: str) -> dict:
 
 
 def _resolve_mcq_options(options: object) -> list[str]:
-    """توحيد الخيارات (قائمة أو dict A-D)."""
+    """Normalize options from a list or A-D dict."""
     if isinstance(options, dict):
         return [str(options.get(key, "")) for key in ("A", "B", "C", "D")]
     if isinstance(options, list):
@@ -87,7 +87,7 @@ def _resolve_mcq_options(options: object) -> list[str]:
 
 
 def _resolve_mcq_answer(options: list[str], answer: object) -> str:
-    """تحويل حرف A-D إلى نص الخيار إن لزم."""
+    """Map letter A-D to the corresponding option text when needed."""
     if isinstance(answer, str) and len(answer) == 1 and answer.upper() in "ABCD":
         index = "ABCD".index(answer.upper())
         if index < len(options):
@@ -96,7 +96,7 @@ def _resolve_mcq_answer(options: list[str], answer: object) -> str:
 
 
 def _mcq_item_from_raw(item: dict) -> dict:
-    """تحويل عنصر MCQ خام من رد النموذج إلى الشكل الداخلي."""
+    """Convert a raw MCQ item from model output to the internal schema."""
     options = _resolve_mcq_options(item.get("options", []))
     answer = _resolve_mcq_answer(options, item.get("correct_answer", item.get("answer", "")))
     question_kind = item.get("type", item.get("question_kind", ""))
@@ -112,7 +112,7 @@ def _mcq_item_from_raw(item: dict) -> dict:
 
 
 def normalize_payload(raw: dict) -> dict:
-    """توحيد رد النموذج (mcq أو questions) إلى ``{"mcq": [...]}``."""
+    """Normalize model output (mcq or questions) to ``{"mcq": [...]}``."""
     mcq: list[dict] = []
 
     if isinstance(raw.get("mcq"), list):
@@ -137,5 +137,5 @@ def normalize_payload(raw: dict) -> dict:
 
 
 def parse_llm_mcq_response(raw: str) -> dict:
-    """تحليل رد LLM كامل → payload موحّد ``{"mcq": [...]}``."""
+    """Parse a full LLM response into a normalized ``{"mcq": [...]}`` payload."""
     return normalize_payload(safe_json(raw))

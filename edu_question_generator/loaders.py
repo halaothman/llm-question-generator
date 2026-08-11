@@ -1,4 +1,4 @@
-"""استخراج النص من PDF و DOCX و TXT عبر pdfplumber/python-docx."""
+"""Extract text from PDF, DOCX, and TXT files via pdfplumber/python-docx."""
 from __future__ import annotations
 
 import os
@@ -8,7 +8,7 @@ import pdfplumber
 
 
 def _format_table(table: list[list | None]) -> str:
-    """تحويل جدول مستخرج إلى نص بصيغة markdown-like."""
+    """Convert an extracted table to markdown-like text."""
     rows: list[list[str]] = []
     for row in table:
         if not row:
@@ -21,7 +21,7 @@ def _format_table(table: list[list | None]) -> str:
 
 
 def load_pdf(path: str) -> str:
-    """قراءة PDF: نص الصفحات + الجداول (بدون OCR)."""
+    """Read PDF: page text + tables (no OCR)."""
     parts: list[str] = []
 
     with pdfplumber.open(path) as pdf:
@@ -41,7 +41,7 @@ def load_pdf(path: str) -> str:
 
 
 def load_docx(path: str) -> str:
-    """قراءة DOCX: فقرات + جداول."""
+    """Read DOCX: paragraphs + tables."""
     document = docx.Document(path)
     parts: list[str] = []
 
@@ -59,10 +59,10 @@ def load_docx(path: str) -> str:
 
 
 def load_text(path: str) -> str:
-    """قراءة المستند: يختار load_pdf أو load_docx أو UTF-8 حسب الامتداد.
+    """Load a document: dispatches to load_pdf, load_docx, or UTF-8 by extension.
 
     Raises:
-        ValueError: إذا كان امتداد الملف غير مدعوم.
+        ValueError: If the file extension is not supported.
     """
     ext = os.path.splitext(path)[1].lower()
 

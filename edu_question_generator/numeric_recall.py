@@ -1,22 +1,22 @@
-"""كشف أسئلة «حفظ رقم» من المصدر دون اشتقاق حقيقي."""
+"""Detect numeric recall questions copied from source without real derivation."""
 from __future__ import annotations
 
 import re
 
-# تحويل الأرقام العربية الهندية إلى لاتينية
+# Map Arabic-Indic digits to Latin digits
 _ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
 
-# مطابقة أعداد صحيحة أو عشرية (مع فواصل آلاف)
+# Match integers or decimals (with thousand separators)
 _NUMBER_TOKEN = re.compile(r"(?<!\w)([\d]{1,3}(?:[,،][\d]{3})+|[\d]+(?:[.][\d]+)?)(?!\w)")
 
 
 def normalize_digits(text: str) -> str:
-    """توحيد الأرقام العربية/اللاتينية في النص."""
+    """Normalize Arabic/Latin digits in text."""
     return str(text or "").translate(_ARABIC_DIGITS)
 
 
 def extract_numbers(text: str, *, min_value: int = 4) -> set[int]:
-    """استخراج الأعداد من النص (تجاهل 0–3 لتقليل ضجيج التسميات)."""
+    """Extract numbers from text (ignore 0–3 to reduce label noise)."""
     normalized = normalize_digits(text)
     found: set[int] = set()
     for match in _NUMBER_TOKEN.finditer(normalized):
@@ -34,7 +34,7 @@ def extract_numbers(text: str, *, min_value: int = 4) -> set[int]:
 
 
 def parse_primary_number(text: str) -> int | None:
-    """أول عدد ظاهر في النص (غالباً إجابة MCQ)."""
+    """First number appearing in text (typically the MCQ answer)."""
     normalized = normalize_digits(str(text or "").strip())
     match = _NUMBER_TOKEN.search(normalized)
     if not match:
@@ -49,12 +49,12 @@ def parse_primary_number(text: str) -> int | None:
 
 
 def question_numbers(text: str) -> set[int]:
-    """أعداد السؤال (حد أدنى 4)."""
+    """Numbers mentioned in the question (minimum value 4)."""
     return extract_numbers(text, min_value=4)
 
 
 def looks_like_multistep_solution(solution: str) -> bool:
-    """هل الحل يبدو اشتقاقاً متعدد الخطوات (وليس نسخ رقم)؟"""
+    """Whether the solution looks like multi-step derivation (not copied digits)."""
     sol = normalize_digits(str(solution or "").strip())
     if len(sol) < 30:
         return False
@@ -68,14 +68,14 @@ def looks_like_multistep_solution(solution: str) -> bool:
 
 
 def is_numeric_recall_from_source(item: dict, source: str) -> bool:
-    """هل السؤال «حفظ رقم»؟ أي إجابة رقمية منسوخة من المصدر بلا اشتقاق حقيقي.
+    """Whether the question is numeric recall: answer copied from source without derivation.
 
     Args:
-        item: عنصر MCQ (q, answer, solution).
-        source: نص المستند المصدر.
+        item: MCQ item (q, answer, solution).
+        source: Source document text.
 
     Returns:
-        True إذا يُرفض كسؤال recall رقمي.
+        True if the item should be rejected as numeric recall.
     """
     if not source.strip():
         return False
