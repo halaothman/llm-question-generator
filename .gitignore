@@ -13,16 +13,22 @@ outputs/plots/
 Thumbs.db
 desktop.ini
 
-# أدوات عرض مؤقتة / ملفات تشغيل محلية
+# Local uploads / runtime artifacts
 uploads/
-
-# فهارس FAISS (تُبنى محلياً من data-sources — حجمها كبير)
 indexes/
-
-# مخرجات التجارب (تُولَّد محلياً)
 outputs/
 
-# ملفات Excel و CSV محلية (تقييمات ونتائج)
+# Generated figures (regenerate locally with tools/)
+OUTPUT/
+docs/figures/
+
+# Figure-generation scripts (not needed at runtime)
+tools/
+
+# Local Excel/CSV exports
 *.xlsx
 *.xls
 *.csv
+
+# Duplicate local pages folder (thesis uses thesis_pages/)
+pages/
