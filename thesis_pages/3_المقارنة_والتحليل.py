@@ -20,8 +20,6 @@ from src.question_dataset import (
 )
 from src.ui_styles import inject_app_styles
 
-st.set_page_config(page_title="المقارنة والتحليل", layout="wide")
-
 inject_app_styles()
 
 # مجلد حفظ صور المخططات المصدّرة من زر «تصدير Violin»

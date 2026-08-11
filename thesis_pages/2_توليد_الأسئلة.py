@@ -33,8 +33,6 @@ except ImportError as e:
     st.error(f"خطأ في استيراد الوحدات: {e}")
     st.stop()
 
-st.set_page_config(page_title="توليد الأسئلة", layout="wide")
-
 inject_app_styles()
 
 UPLOADS = "uploads"

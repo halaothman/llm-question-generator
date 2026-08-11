@@ -11,8 +11,6 @@ if str(_ROOT) not in sys.path:
 
 import streamlit as st
 
-st.set_page_config(page_title="فهرسة قاعدة المعرفة", layout="wide")
-
 try:
     from src.loaders import load_text
     from src.chunking import chunk_text

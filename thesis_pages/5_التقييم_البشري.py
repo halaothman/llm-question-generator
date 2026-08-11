@@ -20,8 +20,6 @@ from src.nonparametric_stats import (
 )
 from src.ui_styles import inject_app_styles
 
-st.set_page_config(page_title="التقييم البشري", layout="wide")
-
 inject_app_styles()
 
 HUMAN_METRICS = ["الوضوح اللغوي", "الصياغة المنطقية", "الملاءمة", "جودة الخيارات", "الدقة"]
