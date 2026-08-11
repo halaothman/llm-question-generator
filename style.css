@@ -1,0 +1,194 @@
+/* ——— Streamlit chrome (إخفاء شريط علوي / deploy) ——— */
+header[data-testid="stHeader"] {
+    display: none;
+}
+
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+    display: none;
+}
+
+.stDeployButton {
+    display: none !important;
+}
+
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+[data-testid="stFileUploader"] small {
+    display: none !important;
+}
+
+/* ——— تخطيط RTL: الشريط الجانبي يمين ——— */
+.stApp {
+    direction: rtl;
+    font-size: 1.0625rem;
+}
+
+.main .block-container {
+    font-size: 1.0625rem;
+    line-height: 1.65;
+}
+
+.main .block-container h1 {
+    font-size: 2.05rem;
+}
+
+.main .block-container h2 {
+    font-size: 1.55rem;
+}
+
+.main .block-container h3 {
+    font-size: 1.28rem;
+}
+
+.main .block-container p,
+.main .block-container li,
+.main .block-container label,
+.main .block-container .stCaption {
+    font-size: 1.0625rem;
+}
+
+.stApp > div:first-child {
+    direction: rtl;
+    flex-direction: row-reverse;
+}
+
+.stSidebar {
+    direction: rtl;
+    text-align: right;
+    order: 2;
+}
+
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNav"] ul,
+[data-testid="stSidebarNav"] a,
+[data-testid="stSidebarNavLink"] {
+    direction: rtl;
+    text-align: right;
+}
+
+.stSidebar * {
+    direction: rtl;
+    text-align: right;
+}
+
+.main .block-container {
+    direction: rtl;
+    text-align: right;
+    order: 1;
+}
+
+.stColumns {
+    direction: rtl;
+}
+
+/* ——— نصوص وعناوين ——— */
+.stMarkdown,
+div[data-testid="stMarkdownContainer"],
+h1, h2, h3, h4, h5, h6,
+.stMarkdown h3,
+.stMarkdown h4 {
+    direction: rtl;
+    text-align: right;
+}
+
+.stMarkdown blockquote {
+    direction: rtl;
+    text-align: right;
+}
+
+/* ——— عناصر نماذج ——— */
+.stSelectbox label,
+.stTextInput label,
+.stTextArea label,
+.stFileUploader label,
+.stFileUploader,
+.stFileUploader > div,
+.stCheckbox > div > label {
+    direction: rtl;
+    text-align: right;
+}
+
+.stButton > button {
+    direction: rtl;
+}
+
+/* ——— مقاييس، جداول، تنبيهات ——— */
+.stMetric,
+.stDataFrame,
+.stDataFrame table,
+.stExpander,
+.stAlert,
+.stSuccess,
+.stError,
+.stWarning,
+.stInfo,
+.stProgress,
+.stSpinner {
+    direction: rtl;
+    text-align: right;
+}
+
+.streamlit-expanderHeader,
+.streamlit-expanderContent {
+    direction: rtl;
+    text-align: right;
+}
+
+/* أكواد (LTR) */
+.stCode {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ——— Radio (محاذاة + بطاقات اختيار) ——— */
+.stRadio > div,
+div[data-testid="stRadio"],
+div[data-testid="stRadio"] > div {
+    direction: rtl;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stRadio > div > label,
+div[data-testid="stRadio"] > div > label {
+    direction: rtl;
+    text-align: right;
+    justify-content: flex-start;
+    display: block;
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    transition: background-color 0.2s;
+}
+
+.stRadio > div > label:hover,
+div[data-testid="stRadio"] > div > label:hover {
+    background-color: #f0f0f0;
+}
+
+.stRadio > div > label > div,
+div[data-testid="stRadio"] > div > label > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    direction: rtl;
+    text-align: right;
+}
+
+.stRadio > div > label > div > div,
+div[data-testid="stRadio"] > div > label > div > div {
+    direction: rtl;
+    text-align: right;
+    flex: 1;
+}

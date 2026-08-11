@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.streamlit/secrets.toml
+.env
+.env.*
+.venv/
+venv/
+plots/
+outputs/plots/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# أدوات عرض مؤقتة / ملفات تشغيل محلية
+uploads/
+
+# فهارس FAISS (تُبنى محلياً من data-sources — حجمها كبير)
+indexes/
+
+# مخرجات التجارب (تُولَّد محلياً)
+outputs/
+
+# ملفات Excel و CSV محلية (تقييمات ونتائج)
+*.xlsx
+*.xls
+*.csv

@@ -1,0 +1,6 @@
+flowchart LR
+  A["1. Documents<br/>PDF, DOCX, TXT, MD"] --> B["2. Text extraction<br/>loaders.py"]
+  B --> C["3. Arabic preprocessing<br/>clean_ar + stem_ar<br/>(indexing only)"]
+  C --> D["4. Chunking<br/>500 / 100 overlap"]
+  D --> E["5. Embeddings<br/>e5-large-v2 or AraBERTv2"]
+  E --> F["6. FAISS + JSONL<br/>baseline / improved"]
