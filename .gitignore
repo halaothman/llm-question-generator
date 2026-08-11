@@ -29,6 +29,3 @@ tools/
 *.xlsx
 *.xls
 *.csv
-
-# Duplicate local pages folder (thesis uses thesis_pages/)
-pages/
